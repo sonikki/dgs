@@ -1,6 +1,4 @@
 import pandas as pd
-from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from tabulate import tabulate
 
 # Lue tiedosto Pandas DataFrameen
@@ -24,29 +22,25 @@ rata_data = df[df['CourseName'] == valittu_rata]
 # Lajittele suoritukset +/- sarakkeen mukaan ja ota top 10
 top_10 = rata_data.sort_values(by='+/-').head(10)
 
-# Tallenna taulukko PDF-tiedostona
-doc = SimpleDocTemplate('top10.pdf', pagesize=letter)
-elements = []
-
-# Muotoile taulukko
-data = [['Pelaaja(t)', 'Rata', 'Par', '+/-']] + top_10[['PlayerName', 'CourseName', 'Kaikki', '+/-']].values.tolist()
-t = Table(data)
-
-# Muotoilu taulukolle
-style = TableStyle([
-    ('BACKGROUND', (0, 0), (-1, 0), (0.9, 0.9, 0.9)),
-    ('TEXTCOLOR', (0, 0), (-1, 0), (0, 0, 0)),
-    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-    ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-    ('BACKGROUND', (0, 1), (-1, -1), (1, 1, 1)),
-    ('GRID', (0, 0), (-1, -1), 0.5, (0, 0, 0)),
-])
-
-t.setStyle(style)
-elements.append(t)
-doc.build(elements)
-
-# Näytä taulukko konsolissa
+# Näytä kaikkien pelaajien top 10 tulokset konsolissa
+print("Kaikkien pelaajien top 10 tulokset:")
 print(tabulate(top_10[['PlayerName', 'CourseName', 'Kaikki', '+/-']], headers='keys', tablefmt='grid', showindex=False))
 
+# Luo lista pelaajien nimistä
+pelaajat = df['PlayerName'].unique()
+
+# Tulosta pelaajien nimet
+print("Saatavilla olevat pelaajat:")
+for i, pelaaja in enumerate(pelaajat, start=1):
+    print(f"{i}. {pelaaja}")
+
+# Kysy käyttäjältä pelaajan numeroa
+valittu_pelaaja_numero = int(input("Valitse pelaajan numero: ")) - 1
+
+# Valitse haluttu pelaaja
+valittu_pelaaja = pelaajat[valittu_pelaaja_numero]
+
+# Näytä valitun pelaajan top 10 tulokset konsolissa
+valitun_pelaajan_tulokset = rata_data[rata_data['PlayerName'] == valittu_pelaaja].sort_values(by='+/-').head(10)
+print(f"\n{valittu_pelaaja}'n top 10 tulokset:")
+print(tabulate(valitun_pelaajan_tulokset[['PlayerName', 'CourseName', 'Kaikki', '+/-']], headers='keys', tablefmt='grid', showindex=False))
