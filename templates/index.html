@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Frisbeegolf Tulokset</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      display: flex;
+      align-items: flex-start;
+    }
+    .sidebar {
+      width: 200px;
+      background-color: #f0f0f0;
+      padding: 20px;
+    }
+    .content {
+      flex: 1;
+      padding: 20px;
+    }
+    select, input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    button {
+      background-color: #007BFF;
+      color: #fff;
+      padding: 10px 20px;
+      border: none;
+      cursor: pointer;
+    }
+  
+    .table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+  
+    .table th, .table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+  </style>
+  
+</head>
+<body>
+  <div class="container">
+    <div class="sidebar">
+      <h3>Valinnat</h3>
+      <label for="rata">Valitse rata:</label>
+      <select id="rata">
+        <!-- Täytä radan nimillä JavaScriptillä -->
+      </select>
+
+      <label for="pelaaja">Valitse pelaaja:</label>
+      <select id="pelaaja">
+        <!-- Täytä pelaajien nimillä JavaScriptillä -->
+      </select>
+
+      <button id="haeTulokset">Hae Tulokset</button>
+    </div>
+
+    <div class="content">
+      <h2>Tulokset</h2>
+      <div id="tulokset">
+        <!-- Tulostaulukko täytetään JavaScriptillä -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    
+    // Hae radat ja pelaajat Flask-sovellukselta ja täytä vaihtoehdot
+    async function haeRadatJaPelaajat() {
+        const rataElement = document.getElementById('rata');
+        const pelaajaElement = document.getElementById('pelaaja');
+
+        try {
+            // Hae radat
+            const radatResponse = await fetch('/hae_radat');
+            const radatData = await radatResponse.json();
+
+            // Täytä radan valintaelementti
+            for (const rata of radatData) {
+                const option = document.createElement('option');
+                option.value = rata;
+                option.textContent = rata;
+                rataElement.appendChild(option);
+            }
+
+            // Hae pelaajat
+            const pelaajatResponse = await fetch('/hae_pelaajat');
+            const pelaajatData = await pelaajatResponse.json();
+
+            // Täytä pelaajan valintaelementti
+            for (const pelaaja of pelaajatData) {
+                const option = document.createElement('option');
+                option.value = pelaaja;
+                option.textContent = pelaaja;
+                pelaajaElement.appendChild(option);
+            }
+        } catch (error) {
+            console.error('Virhe radat ja pelaajat hakiessa:', error);
+        }
+    }
+
+    // Hae tulokset ja näytä ne
+    async function haeJaNaytaTulokset() {
+    const rataIndex = document.getElementById('rata').selectedIndex;
+    const pelaajaIndex = document.getElementById('pelaaja').selectedIndex;
+
+    try {
+        const response = await fetch('/get_top_scores', {
+            method: 'POST',
+            body: JSON.stringify({ rata_index: rataIndex, pelaaja_index: pelaajaIndex }),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const responseJson = await response.json();
+
+        const tuloksetElement = document.getElementById('tulokset');
+        tuloksetElement.innerHTML = `
+            <h2>Top 10 koko rata</h2>
+            ${responseJson.top_10_koko_rata}
+            <h2>Top 10 pelaaja</h2>
+            ${responseJson.top_10_pelaaja}
+        `;
+    } catch (error) {
+        console.error('Virhe tulosten haussa:', error);
+    }
+}
+
+
+// Kutsu funktioita
+haeRadatJaPelaajat();
+
+document.getElementById('haeTulokset').addEventListener('click', haeJaNaytaTulokset);
+
+
+
+  </script>
+</body>
+</html>
