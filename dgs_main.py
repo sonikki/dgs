@@ -1,13 +1,15 @@
 from flask import Flask, render_template, request, jsonify
 import pandas as pd
 from tabulate import tabulate
+import os
 
 app = Flask(__name__)
 
-# Lue CSV-tiedosto DataFrameen
-df = pd.read_csv("scorecards.csv")
-radat = df['CourseName'].unique()
-pelaajat = df['PlayerName'].unique()
+# Lue CSV-tiedosto DataFrameen (Tämä poistetaan, koska tiedosto ladataan käyttäjältä)
+df = None  # Alustetaan DataFrame tyhjäksi
+
+radat = []
+pelaajat = []
 
 @app.route('/')
 def index():
@@ -36,11 +38,17 @@ def get_top_scores():
 
 @app.route('/hae_radat')
 def hae_radat():
-    return jsonify(radat.tolist())
+    if df is not None:
+        unique_radat = df['CourseName'].unique()
+        return jsonify(list(unique_radat))
+    return jsonify([])
 
 @app.route('/hae_pelaajat')
 def hae_pelaajat():
-    return jsonify(pelaajat.tolist())
+    if df is not None:
+        unique_pelaajat = df['PlayerName'].unique()
+        return jsonify(list(unique_pelaajat))
+    return jsonify([])
 
 @app.route('/hae_tulokset', methods=['POST'])
 def hae_tulokset():
@@ -51,15 +59,47 @@ def hae_tulokset():
     print(f'Saatu rata: {rata}')
     print(f'Saatu pelaaja: {pelaaja}')
 
-    # Hae tulokset tietokannasta käyttäen rata- ja pelaajatietoja
-    # sinulla on DataFrame 'df', ja haet tulokset sen perusteella
-    tulokset = df.loc[(df['CourseName'] == rata) & (df['PlayerName'] == pelaaja)]
-    print(f'Löydetty {len(tulokset)} tulosta')  # Tulosten määrä
+    if df is not None:
+        # Hae tulokset tietokannasta käyttäen rata- ja pelaajatietoja
+        tulokset = df.loc[(df['CourseName'] == rata) & (df['PlayerName'] == pelaaja)]
+        print(f'Löydetty {len(tulokset)} tulosta')  # Tulosten määrä
 
-    # Muunna tulokset JSON-muotoon
-    tulokset_json = tulokset.to_dict(orient='records')
+        # Muunna tulokset JSON-muotoon
+        tulokset_json = tulokset.to_dict(orient='records')
 
-    return jsonify(tulokset_json)
+        return jsonify(tulokset_json)
+
+    return jsonify([])
+
+@app.route('/upload_file', methods=['POST'])
+def upload_file():
+    uploaded_file = request.files['file']
+
+    if uploaded_file:
+        # Save the uploaded file to a specific folder
+        file_path = os.path.join("uploads", uploaded_file.filename)
+        uploaded_file.save(file_path)
+
+        # Read the uploaded file into the DataFrame
+        global df
+        df = pd.read_csv(file_path)
+
+        # Update radat and pelaajat from the new DataFrame
+        global radat
+        radat = df['CourseName'].unique()
+
+        global pelaajat
+        pelaajat = df['PlayerName'].unique()
+
+        # Return a response message
+        response_data = {
+            'message': 'Tiedoston lataus onnistui',
+        }
+
+        return jsonify(response_data)
+
+    return jsonify({'message': 'Tiedoston lataaminen epäonnistui'})
+
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,29 +1,48 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Frisbeegolf Tulokset</title>
+  <title>DGS - Disc Golf Statistics</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
+    /* Global CSS Styles */
+    body, body * {
+      margin: 0;
+      padding: 0;
     }
+
+    body {
+      font-family: 'Karla', sans-serif;
+      background: #191A1D;
+      width: 100vw;
+    }
+
     .container {
       display: flex;
       align-items: flex-start;
+      margin: 20px;
     }
+
+    .sidebar, .content {
+      padding: 20px;
+      border-radius: 5px;
+    }
+
     .sidebar {
       width: 200px;
-      background-color: #f0f0f0;
-      padding: 20px;
+      background-color: #746c6c;
+      margin-right: 20px;
     }
+
     .content {
       flex: 1;
-      padding: 20px;
+      background-color: #746c6c;
     }
+
     select, input {
       width: 100%;
       padding: 10px;
       margin-bottom: 10px;
     }
+
     button {
       background-color: #007BFF;
       color: #fff;
@@ -31,117 +50,149 @@
       border: none;
       cursor: pointer;
     }
-  
+
     .table {
       border-collapse: collapse;
       width: 100%;
     }
-  
+
     .table th, .table td {
       border: 1px solid #ddd;
       padding: 8px;
       text-align: center;
     }
+
+    /* Additional CSS for Dropdowns and File Input */
+    #rata, #pelaaja {
+      background-color: #c4b7b7; /* Gray background color for dropdowns */
+    }
+
+    input[type="file"] {
+      background-color: #746c6c;
+      color: #fff;
+    }
   </style>
-  
 </head>
 <body>
   <div class="container">
     <div class="sidebar">
       <h3>Valinnat</h3>
+      <h3>Lataa tiedosto</h3>
+      <form id="file-upload-form" enctype="multipart/form-data" method="post" action="/upload_file">
+        <input type="file" name="file" accept=".csv" onchange="uploadFile(this)" />
+      </form>
+
       <label for="rata">Valitse rata:</label>
-      <select id="rata">
-        <!-- Täytä radan nimillä JavaScriptillä -->
-      </select>
+      <select id="rata"></select>
 
       <label for="pelaaja">Valitse pelaaja:</label>
-      <select id="pelaaja">
-        <!-- Täytä pelaajien nimillä JavaScriptillä -->
-      </select>
+      <select id="pelaaja"></select>
 
-      <button id="haeTulokset">Hae Tulokset</button>
+      <button id="haeTulokset">Hae tulokset</button>
     </div>
 
     <div class="content">
       <h2>Tulokset</h2>
-      <div id="tulokset">
-        <!-- Tulostaulukko täytetään JavaScriptillä -->
-      </div>
+      <div id="tulokset"></div>
     </div>
   </div>
 
   <script>
-    
-    // Hae radat ja pelaajat Flask-sovellukselta ja täytä vaihtoehdot
-    async function haeRadatJaPelaajat() {
-        const rataElement = document.getElementById('rata');
-        const pelaajaElement = document.getElementById('pelaaja');
+    var count = 1;
+    var mousein = false;
 
-        try {
-            // Hae radat
-            const radatResponse = await fetch('/hae_radat');
-            const radatData = await radatResponse.json();
-
-            // Täytä radan valintaelementti
-            for (const rata of radatData) {
-                const option = document.createElement('option');
-                option.value = rata;
-                option.textContent = rata;
-                rataElement.appendChild(option);
-            }
-
-            // Hae pelaajat
-            const pelaajatResponse = await fetch('/hae_pelaajat');
-            const pelaajatData = await pelaajatResponse.json();
-
-            // Täytä pelaajan valintaelementti
-            for (const pelaaja of pelaajatData) {
-                const option = document.createElement('option');
-                option.value = pelaaja;
-                option.textContent = pelaaja;
-                pelaajaElement.appendChild(option);
-            }
-        } catch (error) {
-            console.error('Virhe radat ja pelaajat hakiessa:', error);
-        }
+    function demo() {
+      if (mousein) return;
+      document.getElementById('demo' + count++).classList.toggle('hover');
     }
 
-    // Hae tulokset ja näytä ne
-    async function haeJaNaytaTulokset() {
-    const rataIndex = document.getElementById('rata').selectedIndex;
-    const pelaajaIndex = document.getElementById('pelaaja').selectedIndex;
+    function reset() {
+      count = 1;
+      document.querySelectorAll('.hover').forEach((el) => el.classList.remove('hover'));
+    }
 
-    try {
+    document.addEventListener('mouseover', function () {
+      mousein = true;
+      reset();
+    });
+
+    async function haeRadatJaPelaajat() {
+      const rataElement = document.getElementById('rata');
+      const pelaajaElement = document.getElementById('pelaaja');
+      rataElement.innerHTML = '';
+      pelaajaElement.innerHTML = '';
+
+      try {
+        const fetchAndFill = async (url, element) => {
+          const response = await fetch(url);
+          const data = await response.json();
+          data.forEach((item) => {
+            const option = document.createElement('option');
+            option.value = item;
+            option.textContent = item;
+            element.appendChild(option);
+          });
+        };
+
+        await fetchAndFill('/hae_radat', rataElement);
+        await fetchAndFill('/hae_pelaajat', pelaajaElement);
+      } catch (error) {
+        console.error('Virhe radat ja pelaajat hakiessa:', error);
+      }
+    }
+
+    async function haeJaNaytaTulokset() {
+      const rataIndex = document.getElementById('rata').selectedIndex;
+      const pelaajaIndex = document.getElementById('pelaaja').selectedIndex;
+
+      try {
         const response = await fetch('/get_top_scores', {
-            method: 'POST',
-            body: JSON.stringify({ rata_index: rataIndex, pelaaja_index: pelaajaIndex }),
-            headers: {
-                'Content-Type': 'application/json'
-            }
+          method: 'POST',
+          body: JSON.stringify({ rata_index: rataIndex, pelaaja_index: pelaajaIndex }),
+          headers: {
+            'Content-Type': 'application/json',
+          },
         });
 
         const responseJson = await response.json();
-
         const tuloksetElement = document.getElementById('tulokset');
         tuloksetElement.innerHTML = `
-            <h2>Top 10 koko rata</h2>
-            ${responseJson.top_10_koko_rata}
-            <h2>Top 10 pelaaja</h2>
-            ${responseJson.top_10_pelaaja}
+          <h2>Top 10 koko rata</h2>
+          ${responseJson.top_10_koko_rata}
+          <h2>Pelaajan top 10 radalla</h2>
+          ${responseJson.top_10_pelaaja}
         `;
-    } catch (error) {
+      } catch (error) {
         console.error('Virhe tulosten haussa:', error);
+      }
     }
-}
 
+    function uploadFile(input) {
+      const file = input.files[0];
 
-// Kutsu funktioita
-haeRadatJaPelaajat();
+      if (file) {
+        const form = input.closest('form');
+        const formData = new FormData(form);
+        formData.append('file', file);
 
-document.getElementById('haeTulokset').addEventListener('click', haeJaNaytaTulokset);
+        fetch('/upload_file', {
+          method: 'POST',
+          body: formData,
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            console.log(data.message);
+            haeRadatJaPelaajat();
+          })
+          .catch((error) => {
+            console.error('Error uploading file:', error);
+          });
+      }
+    }
 
+    haeRadatJaPelaajat();
 
-
+    document.getElementById('haeTulokset').addEventListener('click', haeJaNaytaTulokset);
   </script>
 </body>
 </html>
