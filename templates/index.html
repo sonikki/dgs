@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <title>DGS - Disc Golf Statistics</title>
   <style>
     /* Global CSS Styles */
-    body, body * {
+    body,
+    body * {
       margin: 0;
       padding: 0;
     }
@@ -21,7 +23,8 @@
       margin: 20px;
     }
 
-    .sidebar, .content {
+    .sidebar,
+    .content {
       padding: 20px;
       border-radius: 5px;
     }
@@ -37,7 +40,8 @@
       background-color: #746c6c;
     }
 
-    select, input {
+    select,
+    input {
       width: 100%;
       padding: 10px;
       margin-bottom: 10px;
@@ -56,15 +60,18 @@
       width: 100%;
     }
 
-    .table th, .table td {
+    .table th,
+    .table td {
       border: 1px solid #ddd;
       padding: 8px;
       text-align: center;
     }
 
     /* Additional CSS for Dropdowns and File Input */
-    #rata, #pelaaja {
-      background-color: #c4b7b7; /* Gray background color for dropdowns */
+    #rata,
+    #pelaaja {
+      background-color: #c4b7b7;
+      /* Gray background color for dropdowns */
     }
 
     input[type="file"] {
@@ -73,6 +80,7 @@
     }
   </style>
 </head>
+
 <body>
   <div class="container">
     <div class="sidebar">
@@ -100,6 +108,8 @@
   <script>
     var count = 1;
     var mousein = false;
+    var radat = [];     // Declare radat as an empty array
+    var pelaajat = [];  // Declare pelaajat as an empty array
 
     function demo() {
       if (mousein) return;
@@ -123,10 +133,13 @@
       pelaajaElement.innerHTML = '';
 
       try {
-        const fetchAndFill = async (url, element) => {
+        const fetchAndFill = async (url, element, array) => {
           const response = await fetch(url);
           const data = await response.json();
+          console.log(`Data for ${url}:`, data);
+          array.length = 0; // Clear the array
           data.forEach((item) => {
+            array.push(item); // Store data in the array
             const option = document.createElement('option');
             option.value = item;
             option.textContent = item;
@@ -134,12 +147,15 @@
           });
         };
 
-        await fetchAndFill('/hae_radat', rataElement);
-        await fetchAndFill('/hae_pelaajat', pelaajaElement);
+        await fetchAndFill('/hae_radat', rataElement, radat);
+        await fetchAndFill('/hae_pelaajat', pelaajaElement, pelaajat);
+        console.log('Updated radat:', radat);
+        console.log('Updated pelaajat:', pelaajat);
       } catch (error) {
         console.error('Virhe radat ja pelaajat hakiessa:', error);
       }
     }
+
 
     async function haeJaNaytaTulokset() {
       const rataIndex = document.getElementById('rata').selectedIndex;
@@ -195,4 +211,5 @@
     document.getElementById('haeTulokset').addEventListener('click', haeJaNaytaTulokset);
   </script>
 </body>
+
 </html>

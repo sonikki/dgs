@@ -17,24 +17,39 @@ def index():
 
 @app.route('/get_top_scores', methods=['POST'])
 def get_top_scores():
+    """
+    Returns the top 10 scores for a given course and player, as well as the top 10 scores for the entire course.
+
+    Args:
+        None
+
+    Returns:
+        A JSON object containing the top 10 scores for the given course and player, as well as the top 10 scores for the entire course.
+    """
     data = request.get_json()
     rata_index = int(data['rata_index'])
     pelaaja_index = int(data['pelaaja_index'])
 
-    valittu_rata = radat[rata_index]
-    valittu_pelaaja = pelaajat[pelaaja_index]
+    if rata_index >= len(radat):
+        return jsonify({'error': 'Invalid rata_index'})
 
-    rata_data = df[df['CourseName'] == valittu_rata]
-    top_10_koko_rata = tabulate(rata_data.sort_values(by='+/-').head(10)[['PlayerName', 'CourseName', 'Kaikki', '+/-']], headers='keys', tablefmt='html', showindex=False).strip()
-    valitun_pelaajan_tulokset = rata_data[rata_data['PlayerName'] == valittu_pelaaja].sort_values(by='+/-').head(10)
-    top_10_pelaaja = tabulate(valitun_pelaajan_tulokset[['PlayerName', 'CourseName', 'Kaikki', '+/-']], headers='keys', tablefmt='html', showindex=False).strip()
+    if df is not None:
+        valittu_rata = radat[rata_index]
+        valittu_pelaaja = pelaajat[pelaaja_index]
 
-    response_data = {
-        'top_10_koko_rata': top_10_koko_rata,
-        'top_10_pelaaja': top_10_pelaaja
-    }
+        rata_data = df[df['CourseName'] == valittu_rata]
+        top_10_koko_rata = tabulate(rata_data.sort_values(by='+/-').head(10)[['PlayerName', 'CourseName', 'Kaikki', '+/-']], headers='keys', tablefmt='html', showindex=False).strip()
+        valitun_pelaajan_tulokset = rata_data[rata_data['PlayerName'] == valittu_pelaaja].sort_values(by='+/-').head(10)
+        top_10_pelaaja = tabulate(valitun_pelaajan_tulokset[['PlayerName', 'CourseName', 'Kaikki', '+/-']], headers='keys', tablefmt='html', showindex=False).strip()
 
-    return jsonify(response_data)
+        response_data = {
+            'top_10_koko_rata': top_10_koko_rata,
+            'top_10_pelaaja': top_10_pelaaja
+        }
+
+        return jsonify(response_data)
+
+    return jsonify([])
 
 @app.route('/hae_radat')
 def hae_radat():
@@ -73,33 +88,46 @@ def hae_tulokset():
 
 @app.route('/upload_file', methods=['POST'])
 def upload_file():
-    uploaded_file = request.files['file']
+    global df  # Use the global keyword to access the global df variable
 
-    if uploaded_file:
-        # Save the uploaded file to a specific folder
-        file_path = os.path.join("uploads", uploaded_file.filename)
-        uploaded_file.save(file_path)
+    file = request.files['file']
 
-        # Read the uploaded file into the DataFrame
-        global df
-        df = pd.read_csv(file_path)
+    if file:
+        try:
+            # Load the file into a Pandas DataFrame
+            df = pd.read_csv(file)
 
-        # Update radat and pelaajat from the new DataFrame
-        global radat
-        radat = df['CourseName'].unique()
+            # Update radat and pelaajat from the new DataFrame
+            global radat
+            radat = df['CourseName'].unique()
 
-        global pelaajat
-        pelaajat = df['PlayerName'].unique()
+            global pelaajat
+            pelaajat = df['PlayerName'].unique()
 
-        # Return a response message
-        response_data = {
-            'message': 'Tiedoston lataus onnistui',
-        }
+            # Return a response message
+            response_data = {
+                'message': 'Tiedoston lataus onnistui',
+            }
 
-        return jsonify(response_data)
+            return jsonify(response_data)
+        except Exception as e:
+            return jsonify({'message': f'Tiedoston lataaminen epäonnistui: {str(e)}'})
 
     return jsonify({'message': 'Tiedoston lataaminen epäonnistui'})
 
+
+@app.route('/get_courses_for_player', methods=['POST'])
+def get_courses_for_player():
+    data = request.get_json()
+    pelaaja = data['pelaaja']
+
+    if df is not None:
+        # Filter the DataFrame to get the courses for the selected player
+        pelaajan_radat = df.loc[df['PlayerName'] == pelaaja]['CourseName'].unique()
+
+        return jsonify(list(pelaajan_radat))
+
+    return jsonify([])
 
 if __name__ == '__main__':
     app.run(debug=True)
