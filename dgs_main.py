@@ -6,7 +6,7 @@ app = Flask(__name__)
 
 # Lue CSV-tiedosto DataFrameen
 df = pd.read_csv("scorecards.csv")
-ratat = df['CourseName'].unique()
+radat = df['CourseName'].unique()
 pelaajat = df['PlayerName'].unique()
 
 @app.route('/')
@@ -19,7 +19,7 @@ def get_top_scores():
     rata_index = int(data['rata_index'])
     pelaaja_index = int(data['pelaaja_index'])
 
-    valittu_rata = ratat[rata_index]
+    valittu_rata = radat[rata_index]
     valittu_pelaaja = pelaajat[pelaaja_index]
 
     rata_data = df[df['CourseName'] == valittu_rata]
@@ -36,7 +36,7 @@ def get_top_scores():
 
 @app.route('/hae_radat')
 def hae_radat():
-    return jsonify(ratat.tolist())
+    return jsonify(radat.tolist())
 
 @app.route('/hae_pelaajat')
 def hae_pelaajat():
@@ -52,7 +52,7 @@ def hae_tulokset():
     print(f'Saatu pelaaja: {pelaaja}')
 
     # Hae tulokset tietokannasta käyttäen rata- ja pelaajatietoja
-    # Esimerkki: Oletetaan, että sinulla on DataFrame 'df', ja haet tulokset sen perusteella
+    # sinulla on DataFrame 'df', ja haet tulokset sen perusteella
     tulokset = df.loc[(df['CourseName'] == rata) & (df['PlayerName'] == pelaaja)]
     print(f'Löydetty {len(tulokset)} tulosta')  # Tulosten määrä
 
