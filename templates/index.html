@@ -78,6 +78,17 @@
       background-color: #746c6c;
       color: #fff;
     }
+
+    .result-green {
+      color: #00FF00;
+      /* Green color */
+    }
+
+    /* Styling for other results (gray) */
+    .result-gray {
+      color: #161515;
+      /* Gray color */
+    }
   </style>
 </head>
 
@@ -108,8 +119,8 @@
   <script>
     var count = 1;
     var mousein = false;
-    var radat = [];     // Declare radat as an empty array
-    var pelaajat = [];  // Declare pelaajat as an empty array
+    var radat = []; // Declare radat as an empty array
+    var pelaajat = []; // Declare pelaajat as an empty array
 
     function demo() {
       if (mousein) return;
@@ -172,12 +183,30 @@
 
         const responseJson = await response.json();
         const tuloksetElement = document.getElementById('tulokset');
+
+        const top10KokoRata = responseJson.top_10_koko_rata;
+        const top10Pelaaja = responseJson.top_10_pelaaja;
+
+        // Define CSS classes for green and gray
+        const greenClass = 'result-green';
+        const grayClass = 'result-gray';
+
+        // Create a function to add CSS classes based on the score
+        function colorizeResult(match) {
+          const score = parseInt(match, 10);
+          return score < 0 ? greenClass : grayClass;
+        }
+
+        // Use replace with a regular expression to apply the CSS classes
+        const top10KokoRataHtml = top10KokoRata.replace(/(-?\d+)/g, (match) => `<td class="${colorizeResult(match)}">${match}`);
+        const top10PelaajaHtml = top10Pelaaja.replace(/(-?\d+)/g, (match) => `<td class="${colorizeResult(match)}">${match}`);
+
         tuloksetElement.innerHTML = `
-          <h2>Top 10 koko rata</h2>
-          ${responseJson.top_10_koko_rata}
-          <h2>Pelaajan top 10 radalla</h2>
-          ${responseJson.top_10_pelaaja}
-        `;
+        <h2>Top 10 koko rata</h2>
+        ${top10KokoRataHtml}
+        <h2>Pelaajan top 10 radalla</h2>
+        ${top10PelaajaHtml}
+      `;
       } catch (error) {
         console.error('Virhe tulosten haussa:', error);
       }
