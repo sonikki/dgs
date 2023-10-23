@@ -1,0 +1,31 @@
+from flask import Flask, render_template, request, jsonify
+import pandas as pd
+
+app = Flask(__name__)
+
+# Lue CSV-tiedosto DataFrameen
+df = pd.read_csv('users.csv')
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/ryhmittele', methods=['POST'])
+def ryhmittele():
+    data = request.get_json()
+    ryhma_valinta = data['ryhma']
+
+    if ryhma_valinta == 'Ryhmä 1':
+        ryhma_df = df[df['Pisteet'] <= 80]
+    elif ryhma_valinta == 'Ryhmä 2':
+        ryhma_df = df[(df['Pisteet'] > 80) & (df['Pisteet'] <= 90)]
+    else:
+        ryhma_df = df[df['Pisteet'] > 90]
+
+    # Muunna ryhmän tiedot JSON-muotoon
+    ryhma_json = ryhma_df.to_dict(orient='records')
+
+    return jsonify(ryhma_json)
+
+if __name__ == '__main__':
+    app.run(debug=True)
